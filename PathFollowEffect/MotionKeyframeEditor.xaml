@@ -1,0 +1,58 @@
+<UserControl x:Class="PathFollowEffect.MotionKeyframeEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:c="clr-namespace:YukkuriMovieMaker.Controls;assembly=YukkuriMovieMaker.Controls"
+             xmlns:pb="clr-namespace:YukkuriMovieMaker.Views.Behaviors;assembly=YukkuriMovieMaker.Plugin"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+             xmlns:ctrl="clr-namespace:YukkuriMovieMaker.Controls;assembly=YukkuriMovieMaker.Plugin"
+             Name="this">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition/>
+      <RowDefinition/>
+    </Grid.RowDefinitions>
+    <Grid Row="0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition/>
+        <ColumnDefinition Width="26"/>
+      </Grid.ColumnDefinitions>
+      <ListBox SelectionChanged="ListBox_SelectionChanged" Name="listBox" Height="104"
+               ItemsSource="{Binding ElementName=this, Path=Keyframes}">
+        <i:Interaction.Behaviors>
+          <pb:BetterItemsControlScrollForItemEditorBehavior/>
+        </i:Interaction.Behaviors>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <TextBlock>
+              <Run Text="F:"/>
+              <Run Text="{Binding Path=Frame.ActiveValues[0].Value, Mode=OneWay, StringFormat={}{0:F0}}"/>
+              <Run Text=" X:"/>
+              <Run Text="{Binding Path=X.ActiveValues[0].Value, Mode=OneWay, StringFormat={}{0:F0}}"/>
+              <Run Text=" Y:"/>
+              <Run Text="{Binding Path=Y.ActiveValues[0].Value, Mode=OneWay, StringFormat={}{0:F0}}"/>
+            </TextBlock>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ListBox>
+      <Grid Column="1">
+        <Grid.RowDefinitions>
+          <RowDefinition/>
+          <RowDefinition/>
+          <RowDefinition/>
+          <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Button Click="AddButton_Click" Name="addButton" Content="＋" Grid.Row="0"/>
+        <Button Click="RemoveButton_Click" Name="removeButton" Content="－" Grid.Row="1"/>
+        <Button Click="UpButton_Click" Name="upButton" Content="▲" Grid.Row="2"/>
+        <Button Click="DownButton_Click" Name="downButton" Content="▼" Grid.Row="3"/>
+      </Grid>
+    </Grid>
+    <Grid Row="1" ClipToBounds="True">
+      <ctrl:PropertiesEditor BeginEdit="Editor_BeginEdit" EndEdit="Editor_EndEdit"
+                             x:Name="keyframeEditor" Margin="0,-22,0,0"
+                             Targets="{Binding ElementName=this, Path=TargetKeyframes}"/>
+    </Grid>
+  </Grid>
+</UserControl>
