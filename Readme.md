@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/github/license/panko200/PathFollowEffect)](https://github.com/panko200/PathFollowEffect/blob/master/LICENSE)
 [![Last Commit](https://img.shields.io/github/last-commit/panko200/PathFollowEffect)](https://github.com/panko200/PathFollowEffect/commits/master)
 
-パス追従
+パス追従  
 製作者：Panko200  
 配布場所：https://github.com/panko200/PathFollowEffect
 
