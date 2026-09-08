@@ -207,7 +207,7 @@ namespace PathFollowEffect
             for (int i = 0; i < Properties.Length; i++)
             {
                 var immutableList = Properties[i].GetValue<ImmutableList<MotionKeyframe>>();
-                if (index < immutableList.Count)
+                if (immutableList != null && index < immutableList.Count)
                     list.Add(immutableList[index]);
             }
             TargetKeyframes = list.ToArray();
@@ -221,6 +221,6 @@ namespace PathFollowEffect
             downButton.IsEnabled = index < Keyframes.Count - 1;
         }
 
-        public void SetEditorInfo(IEditorInfo info) => keyframeEditor.SetEditorInfo(info);
+        public void SetEditorInfo(IEditorInfo? info) => keyframeEditor.SetEditorInfo(info);
     }
 }

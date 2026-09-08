@@ -36,9 +36,63 @@ namespace PathFollowEffect
         }
         PathType pathType = PathType.Straight;
 
-        [Display(GroupName = "モーションパス", Name = "モーションの滑らかさ", Description = "0=カクカク動く、10=滑らかに動く")]
+        // ─────────────────────────────────────────
+        //  進行設定
+        // ─────────────────────────────────────────
+
+        [Display(GroupName = "進行設定", Name = "指定方法", Description = "パス上の移動の進行方法を選択します")]
+        [EnumComboBox]
+        public MotionProgressMode ProgressMode
+        {
+            get => progressMode;
+            set => Set(ref progressMode, value);
+        }
+        MotionProgressMode progressMode = MotionProgressMode.Keyframe;
+
+        [Display(GroupName = "進行設定", Name = "モーションの滑らかさ", Description = "0=カクカク動く、10=滑らかに動く")]
+        [ShowPropertyEditorWhen(nameof(ProgressMode), MotionProgressMode.Keyframe)]
         [AnimationSlider("F1", "", 0, 10)]
         public Animation Smoothness { get; } = new Animation(5, 0, 10);
+
+        [Display(GroupName = "進行設定", Name = "イージング", Description = "イージングの種類を選択します")]
+        [ShowPropertyEditorWhen(nameof(ProgressMode), MotionProgressMode.Easing)]
+        [EnumComboBox]
+        public EasingType EasingType
+        {
+            get => easingType;
+            set => Set(ref easingType, value);
+        }
+        EasingType easingType = EasingType.Cubic;
+
+        [Display(GroupName = "進行設定", Name = "モード", Description = "イージングの方向を選択します")]
+        [ShowPropertyEditorWhen(nameof(ProgressMode), MotionProgressMode.Easing)]
+        [EnumComboBox]
+        public EasingMode EasingMode
+        {
+            get => easingMode;
+            set => Set(ref easingMode, value);
+        }
+        EasingMode easingMode = EasingMode.InOut;
+
+        [Display(GroupName = "進行設定", Name = "反転", Description = "ONにするとパスの終点から始点に向かって移動します")]
+        [ShowPropertyEditorWhen(nameof(ProgressMode), MotionProgressMode.Easing)]
+        [ToggleSlider]
+        public bool Reverse
+        {
+            get => reverse;
+            set => Set(ref reverse, value);
+        }
+        bool reverse = false;
+
+        [Display(GroupName = "進行設定", Description = "進行速度のベジェ曲線を編集します")]
+        [ShowPropertyEditorWhen(nameof(ProgressMode), MotionProgressMode.Bezier)]
+        [MotionBezierAnimationEditor]
+        public BezierAnimation Bezier { get; } = new BezierAnimation();
+
+        public MotionPathEffect()
+        {
+            SubscribeChildUndoRedoable((YukkuriMovieMaker.UndoRedo.IUndoRedoable)Bezier);
+        }
 
         // ─────────────────────────────────────────
         //  パス全体の変換
