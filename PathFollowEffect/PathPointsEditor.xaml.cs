@@ -255,7 +255,7 @@ namespace PathFollowEffect
             for (int i = 0; i < Properties.Length; i++)
             {
                 var immutableList = Properties[i].GetValue<ImmutableList<PathPoint>>();
-                if (index < immutableList.Count)
+                if (immutableList != null && index < immutableList.Count)
                     list.Add(immutableList[index]);
             }
             TargetPoints = list.ToArray();
@@ -269,6 +269,6 @@ namespace PathFollowEffect
             downButton.IsEnabled = index < Points.Count - 1;
         }
 
-        public void SetEditorInfo(IEditorInfo info) => pointEditor.SetEditorInfo(info);
+        public void SetEditorInfo(IEditorInfo? info) => pointEditor.SetEditorInfo(info);
     }
 }

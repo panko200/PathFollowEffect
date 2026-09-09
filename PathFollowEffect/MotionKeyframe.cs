@@ -12,7 +12,7 @@ namespace PathFollowEffect
     /// </summary>
     public class MotionKeyframe : Animatable
     {
-        [Display(Name = "フレーム", Description = "キーフレームのフレーム番号")]
+        [Display(Name = "フレーム", Description = "キーフレームのフレーム番号（※キーフレーム時刻モード時のみ使用）")]
         [AnimationSlider("F0", "f", 0, 300)]
         public Animation Frame { get; } = new Animation(0, 0, 1000000);
 

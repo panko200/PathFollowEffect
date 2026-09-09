@@ -63,32 +63,86 @@ namespace PathFollowEffect
             float scale = (float)item.PathScale.GetValue(frame, length, fps) / 100f;
             float rotationOffset = (float)item.RotationOffset.GetValue(frame, length, fps);
 
-            // ── キーフレームリストをフレーム順にソート ──
-            var sortedKeyframes = item.Keyframes
-                .Select(kf => new SortedKeyframe
-                {
-                    Frame = (int)kf.Frame.GetValue(frame, length, fps),
-                    X = (float)kf.X.GetValue(frame, length, fps),
-                    Y = (float)kf.Y.GetValue(frame, length, fps),
-                    Angle = (float)kf.Angle.GetValue(frame, length, fps),
-                    Length1 = (float)kf.Length1.GetValue(frame, length, fps),
-                    Length2 = (float)kf.Length2.GetValue(frame, length, fps),
-                    Original = kf
-                })
-                .OrderBy(k => k.Frame)
-                .ToList();
+            // ── キーフレームリストの取得と進行率tの計算 ──
+            List<SortedKeyframe> sortedKeyframes;
+            float t;
 
-            // ── 現在フレームのパス上の進行率を計算 ──
-            int firstFrame = sortedKeyframes[0].Frame;
-            int lastFrame = sortedKeyframes[^1].Frame;
-            float totalDuration = Math.Max(1, lastFrame - firstFrame);
+            if (item.ProgressMode == MotionProgressMode.Easing)
+            {
+                // リストの登録順のままパスを生成（Frameによるソートは行わない）
+                sortedKeyframes = item.Keyframes
+                    .Select(kf => new SortedKeyframe
+                    {
+                        Frame = (int)kf.Frame.GetValue(frame, length, fps),
+                        X = (float)kf.X.GetValue(frame, length, fps),
+                        Y = (float)kf.Y.GetValue(frame, length, fps),
+                        Angle = (float)kf.Angle.GetValue(frame, length, fps),
+                        Length1 = (float)kf.Length1.GetValue(frame, length, fps),
+                        Length2 = (float)kf.Length2.GetValue(frame, length, fps),
+                        Original = kf
+                    })
+                    .ToList();
 
-            // 現在フレームを0.0〜1.0に正規化
-            float rawT = (float)(frame - firstFrame) / totalDuration;
-            rawT = Math.Clamp(rawT, 0f, 1f);
+                // アイテム全体のフレーム進行度 (0.0 〜 1.0)
+                float totalFrames = Math.Max(1f, length - 1);
+                float rate = Math.Clamp((float)frame / totalFrames, 0f, 1f);
+                if (item.Reverse)
+                    rate = 1f - rate;
 
-            // モーションの動きで補間を滑らかにする
-            float t = PathMath.SmoothInterpolate(rawT, smoothness);
+                // YMM4公式のイージング関数を適用
+                t = (float)Easing.GetValue(item.EasingType, item.EasingMode, rate);
+                t = Math.Clamp(t, 0f, 1f);
+            }
+            else if (item.ProgressMode == MotionProgressMode.Bezier)
+            {
+                // リストの登録順のままパスを生成（Frameによるソートは行わない）
+                sortedKeyframes = item.Keyframes
+                    .Select(kf => new SortedKeyframe
+                    {
+                        Frame = (int)kf.Frame.GetValue(frame, length, fps),
+                        X = (float)kf.X.GetValue(frame, length, fps),
+                        Y = (float)kf.Y.GetValue(frame, length, fps),
+                        Angle = (float)kf.Angle.GetValue(frame, length, fps),
+                        Length1 = (float)kf.Length1.GetValue(frame, length, fps),
+                        Length2 = (float)kf.Length2.GetValue(frame, length, fps),
+                        Original = kf
+                    })
+                    .ToList();
+
+                // アイテム全体のフレーム進行度 (0.0 〜 1.0)
+                float totalFrames = Math.Max(1f, length - 1);
+                float rate = Math.Clamp((float)frame / totalFrames, 0f, 1f);
+
+                // YMM4公式のベジェ曲線を適用
+                t = (float)item.Bezier.GetAnimation(rate);
+                t = Math.Clamp(t, 0f, 1f);
+            }
+            else
+            {
+                // 従来方式（キーフレーム時刻）
+                sortedKeyframes = item.Keyframes
+                    .Select(kf => new SortedKeyframe
+                    {
+                        Frame = (int)kf.Frame.GetValue(frame, length, fps),
+                        X = (float)kf.X.GetValue(frame, length, fps),
+                        Y = (float)kf.Y.GetValue(frame, length, fps),
+                        Angle = (float)kf.Angle.GetValue(frame, length, fps),
+                        Length1 = (float)kf.Length1.GetValue(frame, length, fps),
+                        Length2 = (float)kf.Length2.GetValue(frame, length, fps),
+                        Original = kf
+                    })
+                    .OrderBy(k => k.Frame)
+                    .ToList();
+
+                int firstFrame = sortedKeyframes[0].Frame;
+                int lastFrame = sortedKeyframes[^1].Frame;
+                float totalDuration = Math.Max(1, lastFrame - firstFrame);
+
+                float rawT = (float)(frame - firstFrame) / totalDuration;
+                rawT = Math.Clamp(rawT, 0f, 1f);
+
+                t = PathMath.SmoothInterpolate(rawT, smoothness);
+            }
 
             // ── キーフレーム間の補間位置を特定 ──
             // キーフレームをパスポイントとして扱い、パス上の位置を計算

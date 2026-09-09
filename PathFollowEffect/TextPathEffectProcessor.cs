@@ -89,8 +89,11 @@ namespace PathFollowEffect
             }
             else
             {
-                float step = range / (inputCount - 1);
-                t = rangeStart + step * inputIndex;
+                // 文字の正規化インデックス（0.0 〜 1.0）
+                float normIndex = (float)inputIndex / (inputCount - 1);
+                // ベジェ曲線によって配置間隔をマッピング（初期の直線時は mapped == normIndex）
+                float mapped = (float)item.SpacingBezier.GetAnimation(normIndex);
+                t = rangeStart + range * mapped;
             }
 
             // 配置位置（配置オフセット）を加算

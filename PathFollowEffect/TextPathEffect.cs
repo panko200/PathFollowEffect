@@ -11,6 +11,7 @@ using YukkuriMovieMaker.Exo;
 using YukkuriMovieMaker.ItemEditor.CustomVisibilityAttributes;
 using YukkuriMovieMaker.Player.Video;
 using YukkuriMovieMaker.Plugin.Effects;
+using YukkuriMovieMaker.UndoRedo;
 
 namespace PathFollowEffect
 {
@@ -100,6 +101,34 @@ namespace PathFollowEffect
         [AnimationSlider("F1", "%", 0, 100)]
         public Animation MarginEnd { get; } = new Animation(0.5f, -100, 100);
 
+        [Display(GroupName = "テキスト配置", Description = "文字の配置間隔をベジェ曲線で調整します（初期状態は等間隔）")]
+        [MotionBezierAnimationEditor]
+        public BezierAnimation SpacingBezier { get; } = new BezierAnimation();
+
+        public TextPathEffect()
+        {
+            SubscribeChildUndoRedoable((IUndoRedoable)SpacingBezier);
+        }
+
+        // ベジェポイントのドラッグ中にUndoRedoCommandCreatedがBezierAnimationまで
+        // 伝搬しないため、ポイント単位で購読しエフェクトに転送する。
+        private void SubscribeBezierPoints()
+        {
+            foreach (var p in SpacingBezier.Points)
+                p.UndoRedoCommandCreated += BezierPoint_UndoRedoCommandCreated;
+        }
+
+        private void UnsubscribeBezierPoints()
+        {
+            foreach (var p in SpacingBezier.Points)
+                p.UndoRedoCommandCreated -= BezierPoint_UndoRedoCommandCreated;
+        }
+
+        private void BezierPoint_UndoRedoCommandCreated(object? sender, UndoRedoEventArgs e)
+        {
+            RaiseUndoRedoPointCreatedEvent(sender, e);
+        }
+
         // ─────────────────────────────────────────
         //  パスポイント
         // ─────────────────────────────────────────
@@ -126,10 +155,12 @@ namespace PathFollowEffect
         {
             base.BeginEdit();
             oldPathType = PathType;
+            SubscribeBezierPoints();
         }
 
         public override ValueTask EndEditAsync()
         {
+            UnsubscribeBezierPoints();
             if (oldPathType != PathType)
             {
                 // 線の種類が変更された場合、ポイントを変換

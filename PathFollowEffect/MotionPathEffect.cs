@@ -11,6 +11,7 @@ using YukkuriMovieMaker.Exo;
 using YukkuriMovieMaker.ItemEditor.CustomVisibilityAttributes;
 using YukkuriMovieMaker.Player.Video;
 using YukkuriMovieMaker.Plugin.Effects;
+using YukkuriMovieMaker.UndoRedo;
 
 namespace PathFollowEffect
 {
@@ -36,9 +37,82 @@ namespace PathFollowEffect
         }
         PathType pathType = PathType.Straight;
 
-        [Display(GroupName = "モーションパス", Name = "モーションの滑らかさ", Description = "0=カクカク動く、10=滑らかに動く")]
+        // ─────────────────────────────────────────
+        //  進行設定
+        // ─────────────────────────────────────────
+
+        [Display(GroupName = "進行設定", Name = "指定方法", Description = "パス上の移動の進行方法を選択します")]
+        [EnumComboBox]
+        public MotionProgressMode ProgressMode
+        {
+            get => progressMode;
+            set => Set(ref progressMode, value);
+        }
+        MotionProgressMode progressMode = MotionProgressMode.Keyframe;
+
+        [Display(GroupName = "進行設定", Name = "モーションの滑らかさ", Description = "0=カクカク動く、10=滑らかに動く")]
+        [ShowPropertyEditorWhen(nameof(ProgressMode), MotionProgressMode.Keyframe)]
         [AnimationSlider("F1", "", 0, 10)]
         public Animation Smoothness { get; } = new Animation(5, 0, 10);
+
+        [Display(GroupName = "進行設定", Name = "イージング", Description = "イージングの種類を選択します")]
+        [ShowPropertyEditorWhen(nameof(ProgressMode), MotionProgressMode.Easing)]
+        [EnumComboBox]
+        public EasingType EasingType
+        {
+            get => easingType;
+            set => Set(ref easingType, value);
+        }
+        EasingType easingType = EasingType.Cubic;
+
+        [Display(GroupName = "進行設定", Name = "モード", Description = "イージングの方向を選択します")]
+        [ShowPropertyEditorWhen(nameof(ProgressMode), MotionProgressMode.Easing)]
+        [EnumComboBox]
+        public EasingMode EasingMode
+        {
+            get => easingMode;
+            set => Set(ref easingMode, value);
+        }
+        EasingMode easingMode = EasingMode.InOut;
+
+        [Display(GroupName = "進行設定", Name = "反転", Description = "ONにするとパスの終点から始点に向かって移動します")]
+        [ShowPropertyEditorWhen(nameof(ProgressMode), MotionProgressMode.Easing)]
+        [ToggleSlider]
+        public bool Reverse
+        {
+            get => reverse;
+            set => Set(ref reverse, value);
+        }
+        bool reverse = false;
+
+        [Display(GroupName = "進行設定", Description = "進行速度のベジェ曲線を編集します")]
+        [ShowPropertyEditorWhen(nameof(ProgressMode), MotionProgressMode.Bezier)]
+        [MotionBezierAnimationEditor]
+        public BezierAnimation Bezier { get; } = new BezierAnimation();
+
+        public MotionPathEffect()
+        {
+            SubscribeChildUndoRedoable((IUndoRedoable)Bezier);
+        }
+
+        // ベジェポイントのドラッグ中にUndoRedoCommandCreatedがBezierAnimationまで
+        // 伝搬しないため、ポイント単位で購読しエフェクトに転送する。
+        private void SubscribeBezierPoints()
+        {
+            foreach (var p in Bezier.Points)
+                p.UndoRedoCommandCreated += BezierPoint_UndoRedoCommandCreated;
+        }
+
+        private void UnsubscribeBezierPoints()
+        {
+            foreach (var p in Bezier.Points)
+                p.UndoRedoCommandCreated -= BezierPoint_UndoRedoCommandCreated;
+        }
+
+        private void BezierPoint_UndoRedoCommandCreated(object? sender, UndoRedoEventArgs e)
+        {
+            RaiseUndoRedoPointCreatedEvent(sender, e);
+        }
 
         // ─────────────────────────────────────────
         //  パス全体の変換
@@ -104,10 +178,12 @@ namespace PathFollowEffect
         {
             base.BeginEdit();
             oldPathType = PathType;
+            SubscribeBezierPoints();
         }
 
         public override ValueTask EndEditAsync()
         {
+            UnsubscribeBezierPoints();
             if (oldPathType != PathType)
             {
                 // 線の種類が変更された場合、キーフレームのポイントを変換
